@@ -1,17 +1,19 @@
 # main.py
-from fastapi import FastAPI, Depends, HTTPException, status
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from google.oauth2 import id_token
-from google.auth.transport import requests
 import os
-from models import Base, User
-from database import engine, get_db
-from dotenv import load_dotenv
-from typing import Optional
-from pydantic import BaseModel
 from datetime import datetime, timedelta
+from typing import Optional
+
 import jwt
+from dotenv import load_dotenv
+from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from google.auth.transport import requests
+from google.oauth2 import id_token
+from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+from database import engine, get_db
+from models import Base, User
 
 load_dotenv()
 Base.metadata.create_all(bind=engine)

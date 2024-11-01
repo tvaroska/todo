@@ -151,6 +151,58 @@ async def google_auth(auth_request: GoogleAuthRequest, db: Session = Depends(get
             detail="Invalid authentication credentials"
         )
 
+@app.post("/api/auth/google/register")
+async def google_register(auth_request: GoogleAuthRequest, user: User, db: Session = Depends(get_db)):
+    try:
+        # Verify Google token
+        idinfo = id_token.verify_oauth2_token(
+            auth_request.token,
+            requests.Request(),
+            os.getenv("GOOGLE_CLIENT_ID")
+        )
+        
+        google_id = idinfo["sub"]
+        
+        # Update user with Google-specific information
+        user.google_id = google_id
+        if auth_request.access_token:
+            user.oauth_access_token = auth_request.access_token
+            user.oauth_token_expiry = datetime.utcnow() + timedelta(hours=1)
+        if auth_request.refresh_token:
+            user.oauth_refresh_token = auth_request.refresh_token
+        
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        
+        # Create access token
+        access_token = create_access_token(
+            data={"email": user.email, "role": user.role}
+        )
+        
+        return {
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": {
+                "email": user.email,
+                "role": user.role,
+                "id": user.id,
+                "created_at": user.created_at,
+                "updated_at": user.updated_at
+            }
+        }
+        
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Google token"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An error occurred during registration"
+        )
+
 @app.put("/api/users/{user_id}/role")
 async def update_user_role(
     user_id: int,

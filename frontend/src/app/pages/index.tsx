@@ -1,6 +1,6 @@
 // pages/index.tsx
 import { useEffect } from 'react';
-import { useAuth } from './AuthContext';
+import { useAuth } from '../contexts/AuthContext';
 import { GoogleLogin } from '@react-oauth/google';
   
 export default function Home() {
@@ -8,7 +8,8 @@ export default function Home() {
   
     const handleGoogleSuccess = async (response: any) => {
       try {
-        const res = await fetch('http://localhost:8000/api/auth/google', {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+        const res = await fetch(`${apiUrl}/api/auth/google`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

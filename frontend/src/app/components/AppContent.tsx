@@ -33,7 +33,8 @@ function MainContent() {
 
   const handleGoogleSuccess = async (response: any) => {
     try {
-      const res = await fetch('http://localhost:8000/api/auth/google', {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+      const res = await fetch(`${apiUrl}/api/auth/google`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

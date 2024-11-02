@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+
 import GoogleOAuthProviderWrapper from "./components/GoogleOAuthProviderWrapper";
 import Navbar from "./components/Navbar";
 
@@ -29,8 +30,7 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
-      >
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}>
         <GoogleOAuthProviderWrapper>
           <Navbar />
           <main className="flex-1">

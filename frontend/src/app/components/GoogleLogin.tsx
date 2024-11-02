@@ -1,42 +1,45 @@
 'use client';
 
-import { useGoogleOneTapLogin, CredentialResponse } from '@react-oauth/google';
+import { useGoogleLogin } from '@react-oauth/google';
 import { useEffect, useState } from 'react';
 import { useUser } from '../context/UserContext';
-import { jwtDecode } from 'jwt-decode';
-
-interface GoogleCredential {
-  name: string;
-  email: string;
-  picture: string;
-}
 
 export default function GoogleLogin() {
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const { setUser } = useUser();
+  const { user, setUser } = useUser();
 
-  useGoogleOneTapLogin({
-    onSuccess: (credentialResponse: CredentialResponse) => {
-      console.log(credentialResponse);
+  const login = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
       try {
-        if (credentialResponse.credential) {
-          const decoded: GoogleCredential = jwtDecode(credentialResponse.credential);
-          setUser({
-            name: decoded.name,
-            email: decoded.email,
-            picture: decoded.picture
-          });
+        // Fetch user info
+        const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: {
+            'Authorization': `Bearer ${tokenResponse.access_token}`,
+          },
+        });
+
+        if (!userInfoResponse.ok) {
+          throw new Error('Failed to get user info');
         }
+
+        const userInfo = await userInfoResponse.json();
+        
+        setUser({
+          name: userInfo.name,
+          email: userInfo.email,
+          picture: userInfo.picture,
+          accessToken: tokenResponse.access_token,
+        });
       } catch (error) {
-        setError('Failed to decode user information');
+        console.error('Login error:', error);
+        setError(error instanceof Error ? error.message : 'Failed to complete login');
       }
-      setIsLoading(false);
     },
     onError: () => {
       setError('Login failed. Please try again.');
-      setIsLoading(false);
     },
+    scope: 'email profile https://www.googleapis.com/auth/tasks',
+    ux_mode: 'popup',
   });
 
   useEffect(() => {
@@ -54,11 +57,14 @@ export default function GoogleLogin() {
     );
   }
 
-  if (isLoading) {
+  if (!user) {
     return (
-      <div className="fixed top-4 right-4 bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded">
-        Initializing login...
-      </div>
+      <button
+        onClick={() => login()}
+        className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors"
+      >
+        Sign in with Google
+      </button>
     );
   }
 

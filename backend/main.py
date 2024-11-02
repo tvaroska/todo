@@ -1,4 +1,3 @@
-# main.py
 import os
 from datetime import datetime, timedelta
 from typing import Optional, List
@@ -15,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from database import engine, get_db
 from models import Base, User
+from trivial import simple
 
 load_dotenv()
 Base.metadata.create_all(bind=engine)
@@ -58,6 +58,10 @@ class GoogleAuthRequest(BaseModel):
     token: str
     access_token: Optional[str] = None
     refresh_token: Optional[str] = None
+
+class GoogleRegisterRequest(BaseModel):
+    email: str
+    role: str = "user"
 
 # JWT token functions
 def create_access_token(data: dict):
@@ -111,13 +115,8 @@ async def google_auth(auth_request: GoogleAuthRequest, db: Session = Depends(get
         user = db.query(User).filter(User.email == email).first()
         
         if not user:
-            # Create new user
-            user = User(
-                email=email,
-                google_id=google_id,
-                role="user"
-            )
-            db.add(user)
+            # Return None if user doesn't exist
+            return None
         
         # Update OAuth credentials
         if auth_request.access_token:
@@ -152,7 +151,11 @@ async def google_auth(auth_request: GoogleAuthRequest, db: Session = Depends(get
         )
 
 @app.post("/api/auth/google/register")
-async def google_register(auth_request: GoogleAuthRequest, user: User, db: Session = Depends(get_db)):
+async def google_register(
+    auth_request: GoogleAuthRequest,
+    user_data: GoogleRegisterRequest,
+    db: Session = Depends(get_db)
+):
     try:
         # Verify Google token
         idinfo = id_token.verify_oauth2_token(
@@ -163,8 +166,13 @@ async def google_register(auth_request: GoogleAuthRequest, user: User, db: Sessi
         
         google_id = idinfo["sub"]
         
-        # Update user with Google-specific information
-        user.google_id = google_id
+        # Create new user
+        user = User(
+            email=user_data.email,
+            role=user_data.role,
+            google_id=google_id
+        )
+        
         if auth_request.access_token:
             user.oauth_access_token = auth_request.access_token
             user.oauth_token_expiry = datetime.utcnow() + timedelta(hours=1)
@@ -256,3 +264,7 @@ async def get_oauth_status(
         "token_expiry": user.oauth_token_expiry,
         "has_refresh_token": bool(user.oauth_refresh_token)
     }
+
+@app.get("/api/trivial")
+async def trivial_endpoint():
+    return simple()

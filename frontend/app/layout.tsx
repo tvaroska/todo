@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-
-import GoogleOAuthProviderWrapper from "./components/GoogleOAuthProviderWrapper";
 import Navbar from "./components/Navbar";
+import ClientProvider from "./components/ClientProvider";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -17,26 +16,28 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Todo Application",
-  description: "Attempt to build task management",
+  title: "Task Manager",
+  description: "A simple task management application",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}>
-        <GoogleOAuthProviderWrapper>
-          <Navbar />
-          <main className="flex-1">
-            {children}
-          </main>
-        </GoogleOAuthProviderWrapper>
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
+      >
+        <ClientProvider>
+          <div className="min-h-screen flex flex-col">
+            <Navbar />
+            <main className="flex-1 container mx-auto px-4 py-8 overflow-hidden">
+              {children}
+            </main>
+          </div>
+        </ClientProvider>
       </body>
     </html>
   );
